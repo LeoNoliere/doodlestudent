@@ -1,0 +1,41 @@
+version: "3.8"
+services:
+  db:
+    image: mysql
+    volumes:
+      - .src/main/ressources/db/migration/:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=tlc
+      - MYSQL_USER=tlc
+      - MYSQL_PASSWORD=tlc
+  etherpad:
+    image: etherpad/etherpad:1.8
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./APIKEY.txt:/opt/etherpad-lite/APIKEY.txt
+  mail:
+    image: bytemark/smtp
+    restart: always
+    ports:
+      - "2525:25"
+  api:
+    container_name: api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: ["java", "-Dquarkus.datasource.jdbc.url=jdbc:mysql://db:3306/tlc?useUnicode=true&serverTimezone=Europe/Paris", "-jar", "/usr/local/lib/demo.jar"]
+  front:
+    container_name: front
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - 90:80
+    volumes:
+      - ./front/conf/doodle.conf:/etc/nginx/conf.d/doodle.conf
+      - ./front/conf/pad.conf:/etc/nginx/conf.d/pad.conf
+      - ./front/conf/myadmin.conf:/etc/nginx/conf.d/myadmin.conf
