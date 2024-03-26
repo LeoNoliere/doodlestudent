@@ -5,7 +5,7 @@ services:
     volumes:
       - .src/main/ressources/db/migration/:/docker-entrypoint-initdb.d
     ports:
-      - "3306:3306"
+      - "3306:3306/tcp"
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=tlc
@@ -16,26 +16,37 @@ services:
     ports:
       - "9001:9001"
     volumes:
-      - ./APIKEY.txt:/opt/etherpad-lite/APIKEY.txt
+      - /api/APIKEY.txt:/opt/etherpad-lite/APIKEY.txt
   mail:
     image: bytemark/smtp
     restart: always
     ports:
-      - "2525:25"
+      - "2525:25/tcp"
   api:
     container_name: api
     build:
       context: ./api
       dockerfile: Dockerfile
+    #command: ["java", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.datasource.username=tlc", "-Dquarkus.datasource.password=tlc", "-Dquarkus.datasource.jdbc.url=jdbc:mysql://db:3306/tlc?useUnicode=true&serverTimezone=EuropeParis", "-Doodle.internalPadUrl=http://etherpad:9001", "-Doodle.externalPadUrl=http://pad.tlc.fr:90/", "-jar", "/usr/local/lib/demo.jar"]
     command: ["java", "-Dquarkus.datasource.jdbc.url=jdbc:mysql://db:3306/tlc?useUnicode=true&serverTimezone=Europe/Paris", "-jar", "/usr/local/lib/demo.jar"]
+    restart : always
+    depends_on:
+      - db
+    ports:
+      - "8080:8080/tcp"
   front:
     container_name: front
     build:
       context: ./front
       dockerfile: Dockerfile
     ports:
-      - 90:80
+      - "90:80/tcp"
     volumes:
       - ./front/conf/doodle.conf:/etc/nginx/conf.d/doodle.conf
       - ./front/conf/pad.conf:/etc/nginx/conf.d/pad.conf
       - ./front/conf/myadmin.conf:/etc/nginx/conf.d/myadmin.conf
+  myadmin:
+    image: phpmyadmin
+    container_name: myadmin
+    environment:
+      - PMA_HOST=db

@@ -13,3 +13,5 @@ RUN npm run build --prod
 FROM nginx
 
 COPY --from=build /doodlestudent/dist/tlcfront/ /usr/share/nginx/html
+
+RUN rm /etc/nginx/conf.d/default.conf
